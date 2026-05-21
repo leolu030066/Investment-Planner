@@ -632,7 +632,7 @@ function SettingsSummary({ settings }: { settings: SettingsState }) {
   return (
     <section className="summary-panel">
       <div className="section-heading">
-        <h2>Setting</h2>
+        <h2>Goal</h2>
       </div>
       <div className="time-slot-list compact">
         {settings.timeSlots.map((slot) => (
