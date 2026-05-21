@@ -437,6 +437,72 @@ button:focus-visible {
   scroll-behavior: smooth;
 }
 
+.year-group {
+  display: grid;
+  gap: 10px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+}
+
+.year-group.complete {
+  border-color: var(--green);
+}
+
+.year-group.pending {
+  border-color: var(--amber);
+}
+
+.year-group.failed {
+  border-color: var(--red);
+}
+
+.year-header {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1f2937;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.year-header:hover {
+  background: var(--surface-strong);
+}
+
+.year-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.year-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.year-total {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.year-months {
+  display: grid;
+  gap: 10px;
+}
+
 .month-row {
   border: 2px solid var(--border);
   border-radius: 8px;
@@ -608,6 +674,9 @@ button:focus-visible {
 .stock-editor-list {
   display: grid;
   gap: 8px;
+  margin-left: 22px;
+  padding-left: 12px;
+  border-left: 2px solid var(--surface-strong);
 }
 
 .stock-editor-row {
@@ -758,6 +827,14 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .year-header {
+    grid-template-columns: 1fr;
+  }
+
+  .year-total {
+    white-space: normal;
+  }
+
   .wide-field {
     grid-column: span 1;
   }
@@ -797,6 +874,12 @@ button:focus-visible {
   .stock-editor-row:has(.checkbox),
   .history-edit-form {
     grid-template-columns: 1fr;
+  }
+
+  .stock-editor-list {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
   }
 
   .stock-editor-row:has(.checkbox) {

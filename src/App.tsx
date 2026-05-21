@@ -1,5 +1,7 @@
 import {
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
   CheckCircle2,
   History,
   Lock,
@@ -196,6 +198,45 @@ function getOverviewAnalysis(months: AppState["overview"]["months"]) {
     totalMonths: months.length,
     totalStockGoals: months.reduce((total, month) => total + month.stocks.length, 0)
   };
+}
+
+function getAggregateStatus(counts: ReturnType<typeof createStatusCounts>): MonthStatus {
+  if (counts.failed > 0) return "failed";
+  if (counts.pending > 0) return "pending";
+  return "complete";
+}
+
+function getYearGroups(months: AppState["overview"]["months"]) {
+  return Array.from(
+    months.reduce((map, month) => {
+      const year = month.month.slice(0, 4);
+      const current = map.get(year) ?? [];
+      current.push(month);
+      map.set(year, current);
+      return map;
+    }, new Map<string, AppState["overview"]["months"]>())
+  )
+    .map(([year, yearMonths]) => {
+      const monthCounts = createStatusCounts();
+      const stockCounts = createStatusCounts();
+
+      yearMonths.forEach((month) => {
+        monthCounts[month.status] += 1;
+        month.stocks.forEach((stock) => {
+          stockCounts[stock.status] += 1;
+        });
+      });
+
+      return {
+        year,
+        months: yearMonths,
+        monthCounts,
+        stockCounts,
+        status: getAggregateStatus(monthCounts),
+        totalStockGoals: yearMonths.reduce((total, month) => total + month.stocks.length, 0)
+      };
+    })
+    .sort((a, b) => a.year.localeCompare(b.year));
 }
 
 function App() {
@@ -561,6 +602,27 @@ function OverviewPanel({
   currentMonthRef: MutableRefObject<HTMLDivElement | null>;
 }) {
   const analysis = getOverviewAnalysis(state.overview.months);
+  const yearGroups = useMemo(() => getYearGroups(state.overview.months), [state.overview.months]);
+  const currentYear = state.overview.currentMonth.slice(0, 4);
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(() => new Set([currentYear]));
+
+  useEffect(() => {
+    setExpandedYears((current) => {
+      if (current.has(currentYear)) return current;
+      const next = new Set(current);
+      next.add(currentYear);
+      return next;
+    });
+  }, [currentYear]);
+
+  function toggleYear(year: string) {
+    setExpandedYears((current) => {
+      const next = new Set(current);
+      if (next.has(year)) next.delete(year);
+      else next.add(year);
+      return next;
+    });
+  }
 
   return (
     <section className="overview-panel">
@@ -619,32 +681,59 @@ function OverviewPanel({
       </div>
 
       <div className="month-list">
-        {state.overview.months.map((month) => (
-          <div
-            className={`month-row ${month.status} ${month.month === state.overview.currentMonth ? "current" : ""}`}
-            key={month.month}
-            ref={month.month === state.overview.currentMonth ? currentMonthRef : undefined}
-          >
-            <div className="month-main">
-              <div>
-                <div className="month-title">{month.month}</div>
-              </div>
-              <div className="month-status" title={statusLabel(month.status)}>
-                <StatusIcon status={month.status} />
-              </div>
-            </div>
-            <div className="stock-overview-list">
-              {month.stocks.map((stock) => (
-                <div className={`stock-overview-row ${stock.status}`} key={stockKey(stock.stockName, stock.currency)}>
-                  <span className="stock-name">{stock.stockName}</span>
-                  <span>{formatMoney(stock.actual, stock.currency)}</span>
-                  <span className="muted-text">/ {formatMoney(stock.target, stock.currency)}</span>
-                  <StatusIcon status={stock.status} />
+        {yearGroups.map((group) => {
+          const expanded = expandedYears.has(group.year);
+
+          return (
+            <div className={`year-group ${group.status}`} key={group.year}>
+              <button className="year-header" type="button" onClick={() => toggleYear(group.year)} aria-expanded={expanded}>
+                <span className="year-title">
+                  {expanded ? <ChevronDown /> : <ChevronRight />}
+                  {group.year}
+                </span>
+                <span className="year-summary">
+                  <span className="analysis-chip complete">完成 {group.stockCounts.complete}</span>
+                  <span className="analysis-chip pending">暫定 {group.stockCounts.pending}</span>
+                  <span className="analysis-chip failed">失敗 {group.stockCounts.failed}</span>
+                </span>
+                <span className="year-total">
+                  {group.months.length} months · {group.totalStockGoals} goals
+                </span>
+              </button>
+
+              {expanded && (
+                <div className="year-months">
+                  {group.months.map((month) => (
+                    <div
+                      className={`month-row ${month.status} ${month.month === state.overview.currentMonth ? "current" : ""}`}
+                      key={month.month}
+                      ref={month.month === state.overview.currentMonth ? currentMonthRef : undefined}
+                    >
+                      <div className="month-main">
+                        <div>
+                          <div className="month-title">{month.month}</div>
+                        </div>
+                        <div className="month-status" title={statusLabel(month.status)}>
+                          <StatusIcon status={month.status} />
+                        </div>
+                      </div>
+                      <div className="stock-overview-list">
+                        {month.stocks.map((stock) => (
+                          <div className={`stock-overview-row ${stock.status}`} key={stockKey(stock.stockName, stock.currency)}>
+                            <span className="stock-name">{stock.stockName}</span>
+                            <span>{formatMoney(stock.actual, stock.currency)}</span>
+                            <span className="muted-text">/ {formatMoney(stock.target, stock.currency)}</span>
+                            <StatusIcon status={stock.status} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
