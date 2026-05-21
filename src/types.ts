@@ -29,6 +29,8 @@ export interface OperationSnapshot {
   amount: number;
   price: number;
   quantity: number;
+  splitFrom?: number;
+  splitTo?: number;
   date: string;
   note: string;
   status: OperationStatus;
@@ -43,6 +45,8 @@ export interface InvestmentOperation {
   amount: number;
   price: number;
   quantity: number;
+  splitFrom?: number;
+  splitTo?: number;
   date: string;
   note: string;
   status: OperationStatus;
@@ -103,6 +107,8 @@ export interface OperationFormValues {
   amount: string;
   price: string;
   quantity: string;
+  splitFrom: string;
+  splitTo: string;
   date: string;
   note: string;
 }

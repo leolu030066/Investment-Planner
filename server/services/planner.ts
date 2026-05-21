@@ -124,6 +124,8 @@ export function snapshotOperation(operation: InvestmentOperation): OperationSnap
     amount: operation.amount,
     price: operation.price,
     quantity: operation.quantity,
+    splitFrom: operation.splitFrom,
+    splitTo: operation.splitTo,
     date: operation.date,
     note: operation.note,
     status: operation.status,
@@ -274,6 +276,11 @@ function allocateSell(schedule: MonthBuckets, operation: InvestmentOperation, wa
   });
 }
 
+function splitRatio(operation: InvestmentOperation) {
+  if (!operation.splitFrom || !operation.splitTo || operation.splitFrom <= EPSILON || operation.splitTo <= EPSILON) return null;
+  return operation.splitTo / operation.splitFrom;
+}
+
 function buildHoldings(operations: InvestmentOperation[], warnings: PlannerWarning[]) {
   const holdings = new Map<string, HoldingOverview>();
 
@@ -297,15 +304,15 @@ function buildHoldings(operations: InvestmentOperation[], warnings: PlannerWarni
         current.quantity -= operation.quantity;
       }
     } else if (operation.type === "SPLIT") {
-      const nextQuantity = current.quantity + operation.quantity;
+      const ratio = splitRatio(operation);
 
-      if (nextQuantity < -EPSILON) {
+      if (!ratio) {
         warnings.push({
           operationId: operation.id,
-          message: `${operation.date} ${operation.stockName} Split 股數調整會讓持股小於 0，已略過這筆 Split。`
+          message: `${operation.date} ${operation.stockName} Split 比例無效，已略過這筆 Split。`
         });
       } else {
-        current.quantity = nextQuantity;
+        current.quantity *= ratio;
       }
     }
 

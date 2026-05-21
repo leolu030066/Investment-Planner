@@ -65,7 +65,9 @@ const splitOperationSchema = operationBaseSchema.extend({
   type: z.literal("SPLIT"),
   amount: z.coerce.number().optional().default(0),
   price: z.coerce.number().optional().default(0),
-  quantity: z.coerce.number().refine((quantity) => Math.abs(quantity) > 0, "Quantity change cannot be 0")
+  quantity: z.coerce.number().optional().default(0),
+  splitFrom: z.coerce.number().positive("Split from must be greater than 0"),
+  splitTo: z.coerce.number().positive("Split to must be greater than 0")
 });
 
 const operationSchema = z.discriminatedUnion("type", [buyOperationSchema, sellOperationSchema, splitOperationSchema]);
@@ -104,6 +106,8 @@ function serializeOperation(doc: any): InvestmentOperation {
     amount: doc.amount,
     price: doc.price,
     quantity: doc.quantity,
+    splitFrom: doc.splitFrom,
+    splitTo: doc.splitTo,
     date: doc.date,
     note: doc.note ?? "",
     status: doc.status,
@@ -178,6 +182,7 @@ function parseOperation(input: unknown) {
     stockName: normalizeStockName(parsed.stockName),
     amount: parsed.type === "SPLIT" ? 0 : parsed.amount,
     price: parsed.type === "SPLIT" ? 0 : parsed.price,
+    quantity: parsed.type === "SPLIT" ? 0 : parsed.quantity,
     note: parsed.note.trim()
   };
 }
@@ -196,6 +201,8 @@ function buildCandidateOperation(
     amount: input.amount,
     price: input.price,
     quantity: input.quantity,
+    splitFrom: input.type === "SPLIT" ? input.splitFrom : undefined,
+    splitTo: input.type === "SPLIT" ? input.splitTo : undefined,
     date: input.date,
     note: input.note,
     status: values?.status ?? "active",
@@ -253,6 +260,8 @@ router.post("/operations", async (req, res, next) => {
       amount: candidate.amount,
       price: candidate.price,
       quantity: candidate.quantity,
+      splitFrom: candidate.splitFrom,
+      splitTo: candidate.splitTo,
       date: candidate.date,
       note: candidate.note,
       status: "active",
@@ -295,6 +304,8 @@ router.patch("/operations/:id", async (req, res, next) => {
       amount: candidate.amount,
       price: candidate.price,
       quantity: candidate.quantity,
+      splitFrom: candidate.splitFrom,
+      splitTo: candidate.splitTo,
       date: candidate.date,
       note: candidate.note
     });
@@ -340,6 +351,8 @@ router.post("/operations/:id/undo", async (req, res, next) => {
       amount: previous.amount,
       price: previous.price,
       quantity: previous.quantity,
+      splitFrom: previous.splitFrom,
+      splitTo: previous.splitTo,
       date: previous.date,
       note: previous.note,
       status: previous.status

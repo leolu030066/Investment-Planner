@@ -33,7 +33,9 @@ function operationPayload(values: OperationFormValues) {
     currency: values.currency,
     amount: isSplit ? 0 : Number(values.amount),
     price: isSplit ? 0 : Number(values.price),
-    quantity: Number(values.quantity),
+    quantity: isSplit ? 0 : Number(values.quantity),
+    splitFrom: isSplit ? Number(values.splitFrom) : undefined,
+    splitTo: isSplit ? Number(values.splitTo) : undefined,
     date: values.date,
     note: values.note
   };

@@ -143,6 +143,8 @@ function emptyForm(type: OperationType, option?: StockOption): OperationFormValu
     amount: "",
     price: "",
     quantity: "",
+    splitFrom: "1",
+    splitTo: "2",
     date: todayTaiwan(),
     note: ""
   };
@@ -156,6 +158,8 @@ function formFromOperation(operation: InvestmentOperation): OperationFormValues 
     amount: String(operation.amount),
     price: String(operation.price),
     quantity: String(operation.quantity),
+    splitFrom: String(operation.splitFrom ?? 1),
+    splitTo: String(operation.splitTo ?? 2),
     date: operation.date,
     note: operation.note
   };
@@ -179,14 +183,14 @@ function StatusIcon({ status }: { status: MonthStatus }) {
   return <Minus className="status-icon pending" aria-label="Pending" />;
 }
 
-function formatSignedNumber(value: number) {
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${formatNumber(value)}`;
+function splitRatioLabel(operation: InvestmentOperation) {
+  if (!operation.splitFrom || !operation.splitTo) return "ratio not set";
+  return `${formatNumber(operation.splitFrom)} -> ${formatNumber(operation.splitTo)}`;
 }
 
 function historyTitle(operation: InvestmentOperation) {
   if (operation.type === "SPLIT") {
-    return `${operation.date} · ${operation.stockName} · Split ${formatSignedNumber(operation.quantity)} shares`;
+    return `${operation.date} · ${operation.stockName} · Split ${splitRatioLabel(operation)}`;
   }
 
   return `${operation.date} · ${operation.stockName} · ${formatMoney(operation.amount, operation.currency)}`;
@@ -194,7 +198,7 @@ function historyTitle(operation: InvestmentOperation) {
 
 function historyMeta(operation: InvestmentOperation) {
   if (operation.type === "SPLIT") {
-    return `Quantity Change ${formatSignedNumber(operation.quantity)}${operation.note ? ` · ${operation.note}` : ""}`;
+    return `Ratio ${splitRatioLabel(operation)}${operation.note ? ` · ${operation.note}` : ""}`;
   }
 
   return `Price ${formatMoney(operation.price, operation.currency)} · Quantity ${formatNumber(operation.quantity)}${
@@ -471,7 +475,30 @@ function App() {
               ))}
             </select>
           </label>
-          {form.type !== "SPLIT" && (
+          {form.type === "SPLIT" ? (
+            <>
+              <label>
+                From Shares
+                <input
+                  inputMode="decimal"
+                  value={form.splitFrom}
+                  onChange={(event) => setForm((current) => ({ ...current, splitFrom: event.target.value }))}
+                  placeholder="1"
+                  required
+                />
+              </label>
+              <label>
+                To Shares
+                <input
+                  inputMode="decimal"
+                  value={form.splitTo}
+                  onChange={(event) => setForm((current) => ({ ...current, splitTo: event.target.value }))}
+                  placeholder="2"
+                  required
+                />
+              </label>
+            </>
+          ) : (
             <>
               <label>
                 Amount ({form.currency})
@@ -493,18 +520,18 @@ function App() {
                   required
                 />
               </label>
+              <label>
+                Quantity
+                <input
+                  inputMode="decimal"
+                  value={form.quantity}
+                  onChange={(event) => setForm((current) => ({ ...current, quantity: event.target.value }))}
+                  placeholder="0"
+                  required
+                />
+              </label>
             </>
           )}
-          <label>
-            {form.type === "SPLIT" ? "Quantity Change" : "Quantity"}
-            <input
-              inputMode="decimal"
-              value={form.quantity}
-              onChange={(event) => setForm((current) => ({ ...current, quantity: event.target.value }))}
-              placeholder={form.type === "SPLIT" ? "+10 / -8" : "0"}
-              required
-            />
-          </label>
           <label>
             Date
             <input
@@ -1197,9 +1224,18 @@ function HistoryEditForm({
     onChange({ ...form, stockName: option.stockName, currency: option.currency });
   }
 
+  function selectType(type: OperationType) {
+    onChange({
+      ...form,
+      type,
+      splitFrom: form.splitFrom || "1",
+      splitTo: form.splitTo || "2"
+    });
+  }
+
   return (
     <div className="history-edit-form">
-      <select value={form.type} onChange={(event) => onChange({ ...form, type: event.target.value as OperationType })}>
+      <select value={form.type} onChange={(event) => selectType(event.target.value as OperationType)}>
         <option value="BUY">BUY</option>
         <option value="SELL">SELL</option>
         <option value="SPLIT">SPLIT</option>
@@ -1211,18 +1247,33 @@ function HistoryEditForm({
           </option>
         ))}
       </select>
-      {form.type !== "SPLIT" && (
+      {form.type === "SPLIT" ? (
+        <>
+          <input
+            value={form.splitFrom}
+            inputMode="decimal"
+            onChange={(event) => onChange({ ...form, splitFrom: event.target.value })}
+            placeholder="From"
+          />
+          <input
+            value={form.splitTo}
+            inputMode="decimal"
+            onChange={(event) => onChange({ ...form, splitTo: event.target.value })}
+            placeholder="To"
+          />
+        </>
+      ) : (
         <>
           <input value={form.amount} inputMode="decimal" onChange={(event) => onChange({ ...form, amount: event.target.value })} />
           <input value={form.price} inputMode="decimal" onChange={(event) => onChange({ ...form, price: event.target.value })} />
+          <input
+            value={form.quantity}
+            inputMode="decimal"
+            onChange={(event) => onChange({ ...form, quantity: event.target.value })}
+            placeholder="Quantity"
+          />
         </>
       )}
-      <input
-        value={form.quantity}
-        inputMode="decimal"
-        onChange={(event) => onChange({ ...form, quantity: event.target.value })}
-        placeholder={form.type === "SPLIT" ? "+10 / -8" : "Quantity"}
-      />
       <input value={form.date} onChange={(event) => onChange({ ...form, date: event.target.value.replace(/-/g, "/") })} />
       <input value={form.note} onChange={(event) => onChange({ ...form, note: event.target.value })} placeholder="Note" />
       <div className="row-actions">
