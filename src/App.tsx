@@ -571,9 +571,7 @@ function OverviewPanel({
           state.overview.holdings.map((holding) => (
             <div className="holding-item" key={stockKey(holding.stockName, holding.currency)}>
               <strong>{holding.stockName}</strong>
-              <span>
-                {formatNumber(holding.quantity)} shares · {holding.currency}
-              </span>
+              <span>{formatNumber(holding.quantity)} shares</span>
             </div>
           ))
         )}
