@@ -659,11 +659,16 @@ button:focus-visible {
 }
 
 .history-meta,
+.history-updated,
 .deleted-label {
   margin-top: 4px;
   color: var(--muted);
   font-size: 13px;
   overflow-wrap: anywhere;
+}
+
+.history-updated {
+  font-size: 12px;
 }
 
 .deleted-label {

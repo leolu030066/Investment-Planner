@@ -118,6 +118,21 @@ function formatNumber(value: number) {
   }).format(value);
 }
 
+function formatTaiwanDateTime(value: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Taipei",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(new Date(value));
+  const lookup = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return `${lookup.year}/${lookup.month}/${lookup.day} ${lookup.hour}:${lookup.minute}`;
+}
+
 function emptyForm(type: OperationType, option?: StockOption): OperationFormValues {
   return {
     type,
@@ -983,6 +998,7 @@ function HistoryModal({
                             Price {formatMoney(operation.price, operation.currency)} · Quantity {formatNumber(operation.quantity)}
                             {operation.note ? ` · ${operation.note}` : ""}
                           </div>
+                          <div className="history-updated">Updated {formatTaiwanDateTime(operation.updatedAt)}</div>
                           {operation.status === "deleted" && <div className="deleted-label">Deleted</div>}
                         </div>
                       </div>
