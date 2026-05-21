@@ -1075,9 +1075,9 @@ function HistoryModal({
   const chronological = useMemo(
     () =>
       [...operations].sort((a, b) => {
-        const byDate = a.date.localeCompare(b.date);
+        const byDate = b.date.localeCompare(a.date);
         if (byDate !== 0) return byDate;
-        return a.createdAt.localeCompare(b.createdAt);
+        return b.createdAt.localeCompare(a.createdAt);
       }),
     [operations]
   );
