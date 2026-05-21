@@ -25,7 +25,7 @@ const currencySchema = z.enum(["USD", "TWD"]);
 const stockSettingSchema = z.object({
   id: z.string().optional(),
   stockName: z.string().trim().min(1, "Stock name is required"),
-  monthlyGoal: z.coerce.number().positive("Monthly goal must be greater than 0"),
+  monthlyGoal: z.coerce.number().nonnegative("Monthly goal must be 0 or greater"),
   currency: currencySchema
 });
 
@@ -62,7 +62,7 @@ class ApiError extends Error {
 
 function toErrorMessage(error: unknown) {
   if (error instanceof z.ZodError) {
-    return error.issues.map((issue) => issue.message).join(", ");
+    return Array.from(new Set(error.issues.map((issue) => issue.message))).join(", ");
   }
 
   if (error instanceof Error) return error.message;

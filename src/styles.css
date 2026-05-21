@@ -63,7 +63,8 @@ button:disabled {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   margin: 0;
   letter-spacing: 0;
 }
@@ -75,6 +76,11 @@ h1 {
 
 h2 {
   font-size: 18px;
+  line-height: 1.2;
+}
+
+h3 {
+  font-size: 16px;
   line-height: 1.2;
 }
 
@@ -345,6 +351,83 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.analysis-panel {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.analysis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 11px;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analysis-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.analysis-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.analysis-total {
+  color: #1f2937;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.analysis-status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.analysis-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.analysis-chip.complete {
+  color: var(--green);
+  background: var(--green-bg);
+}
+
+.analysis-chip.pending {
+  color: var(--amber);
+  background: var(--amber-bg);
+}
+
+.analysis-chip.failed {
+  color: var(--red);
+  background: var(--red-bg);
+}
+
 .month-list {
   display: grid;
   gap: 10px;
@@ -355,15 +438,27 @@ button:focus-visible {
 }
 
 .month-row {
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 8px;
   background: #fff;
   padding: 12px;
 }
 
+.month-row.complete {
+  border-color: var(--green);
+}
+
+.month-row.pending {
+  border-color: var(--amber);
+}
+
+.month-row.failed {
+  border-color: var(--red);
+}
+
 .month-row.current {
-  border-color: #7aa7ff;
-  box-shadow: inset 4px 0 0 var(--blue);
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
 }
 
 .month-main {
@@ -421,9 +516,25 @@ button:focus-visible {
   align-items: center;
   min-height: 34px;
   padding: 6px 8px;
+  border: 2px solid var(--border);
   border-radius: 8px;
   background: #f8fafc;
   font-size: 13px;
+}
+
+.stock-overview-row.complete {
+  border-color: var(--green);
+  background: var(--green-bg);
+}
+
+.stock-overview-row.pending {
+  border-color: var(--amber);
+  background: var(--amber-bg);
+}
+
+.stock-overview-row.failed {
+  border-color: var(--red);
+  background: var(--red-bg);
 }
 
 .stock-name {
@@ -645,6 +756,10 @@ button:focus-visible {
   .operation-form,
   .history-edit-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-grid {
+    grid-template-columns: 1fr;
   }
 
   .wide-field {

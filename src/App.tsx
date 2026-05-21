@@ -156,6 +156,33 @@ function StatusIcon({ status }: { status: MonthStatus }) {
   return <Minus className="status-icon pending" aria-label="暫定" />;
 }
 
+function createStatusCounts() {
+  return {
+    complete: 0,
+    pending: 0,
+    failed: 0
+  };
+}
+
+function getOverviewAnalysis(months: AppState["overview"]["months"]) {
+  const monthCounts = createStatusCounts();
+  const stockCounts = createStatusCounts();
+
+  months.forEach((month) => {
+    monthCounts[month.status] += 1;
+    month.stocks.forEach((stock) => {
+      stockCounts[stock.status] += 1;
+    });
+  });
+
+  return {
+    monthCounts,
+    stockCounts,
+    totalMonths: months.length,
+    totalStockGoals: months.reduce((total, month) => total + month.stocks.length, 0)
+  };
+}
+
 function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -298,7 +325,7 @@ function App() {
       <header className="topbar">
         <div>
           <h1>Investment Planner</h1>
-          <div className="current-month">Taiwan month {state.overview.currentMonth}</div>
+          <div className="current-month">Taiwan date {todayTaiwan()}</div>
         </div>
         <div className="icon-actions">
           {authEnabled && (
@@ -518,6 +545,8 @@ function OverviewPanel({
   state: AppState;
   currentMonthRef: MutableRefObject<HTMLDivElement | null>;
 }) {
+  const analysis = getOverviewAnalysis(state.overview.months);
+
   return (
     <section className="overview-panel">
       <div className="section-heading">
@@ -550,10 +579,36 @@ function OverviewPanel({
         )}
       </div>
 
+      <div className="analysis-panel">
+        <div className="analysis-header">
+          <h3>Analysis</h3>
+        </div>
+        <div className="analysis-grid">
+          <div className="analysis-group">
+            <div className="analysis-label">Months</div>
+            <div className="analysis-total">{analysis.totalMonths}</div>
+            <div className="analysis-status-list">
+              <span className="analysis-chip complete">完成 {analysis.monthCounts.complete}</span>
+              <span className="analysis-chip pending">暫定 {analysis.monthCounts.pending}</span>
+              <span className="analysis-chip failed">失敗 {analysis.monthCounts.failed}</span>
+            </div>
+          </div>
+          <div className="analysis-group">
+            <div className="analysis-label">Stock Goals</div>
+            <div className="analysis-total">{analysis.totalStockGoals}</div>
+            <div className="analysis-status-list">
+              <span className="analysis-chip complete">完成 {analysis.stockCounts.complete}</span>
+              <span className="analysis-chip pending">暫定 {analysis.stockCounts.pending}</span>
+              <span className="analysis-chip failed">失敗 {analysis.stockCounts.failed}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="month-list">
         {state.overview.months.map((month) => (
           <div
-            className={`month-row ${month.month === state.overview.currentMonth ? "current" : ""}`}
+            className={`month-row ${month.status} ${month.month === state.overview.currentMonth ? "current" : ""}`}
             key={month.month}
             ref={month.month === state.overview.currentMonth ? currentMonthRef : undefined}
           >
@@ -574,7 +629,7 @@ function OverviewPanel({
             </div>
             <div className="stock-overview-list">
               {month.stocks.map((stock) => (
-                <div className="stock-overview-row" key={stockKey(stock.stockName, stock.currency)}>
+                <div className={`stock-overview-row ${stock.status}`} key={stockKey(stock.stockName, stock.currency)}>
                   <span className="stock-name">{stock.stockName}</span>
                   <span>{formatMoney(stock.actual, stock.currency)}</span>
                   <span className="muted-text">/ {formatMoney(stock.target, stock.currency)}</span>
