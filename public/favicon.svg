@@ -1,19 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Investment Planner">
   <defs>
-    <linearGradient id="bg" x1="10" y1="8" x2="54" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#12213f"/>
-      <stop offset="1" stop-color="#0f766e"/>
+    <linearGradient id="bg" x1="8" y1="7" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset=".62" stop-color="#164e63"/>
+      <stop offset="1" stop-color="#047857"/>
     </linearGradient>
-    <linearGradient id="line" x1="14" y1="42" x2="50" y2="18" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#86efac"/>
-      <stop offset="1" stop-color="#22c55e"/>
+    <linearGradient id="gold" x1="18" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="1" stop-color="#f59e0b"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
-  <path d="M16 47h34" stroke="#dbeafe" stroke-width="4" stroke-linecap="round" opacity=".72"/>
-  <rect x="16" y="34" width="7" height="13" rx="2" fill="#bfdbfe"/>
-  <rect x="28" y="27" width="7" height="20" rx="2" fill="#93c5fd"/>
-  <rect x="40" y="20" width="7" height="27" rx="2" fill="#60a5fa"/>
-  <path d="M15 39l11-8 8 4 14-16" fill="none" stroke="url(#line)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="49" cy="18" r="4.5" fill="#22c55e"/>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <circle cx="44" cy="20" r="10" fill="url(#gold)"/>
+  <path d="M44 14v12M38 20h12" stroke="#78350f" stroke-width="3" stroke-linecap="round"/>
+  <path d="M15 45h36" stroke="#dbeafe" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  <rect x="16" y="34" width="7" height="11" rx="2" fill="#bfdbfe"/>
+  <rect x="28" y="28" width="7" height="17" rx="2" fill="#93c5fd"/>
+  <rect x="40" y="31" width="7" height="14" rx="2" fill="#60a5fa"/>
+  <path d="M15 38l12-9 9 6 14-18" fill="none" stroke="#22c55e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

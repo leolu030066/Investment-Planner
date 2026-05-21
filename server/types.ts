@@ -1,5 +1,5 @@
 export type Currency = "USD" | "TWD";
-export type OperationType = "BUY" | "SELL";
+export type OperationType = "BUY" | "SELL" | "SPLIT";
 export type OperationStatus = "active" | "deleted";
 export type MonthStatus = "complete" | "pending" | "failed";
 

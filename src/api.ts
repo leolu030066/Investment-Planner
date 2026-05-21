@@ -25,12 +25,14 @@ export interface AuthStatus {
 }
 
 function operationPayload(values: OperationFormValues) {
+  const isSplit = values.type === "SPLIT";
+
   return {
     type: values.type,
     stockName: values.stockName,
     currency: values.currency,
-    amount: Number(values.amount),
-    price: Number(values.price),
+    amount: isSplit ? 0 : Number(values.amount),
+    price: isSplit ? 0 : Number(values.price),
     quantity: Number(values.quantity),
     date: values.date,
     note: values.note

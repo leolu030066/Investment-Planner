@@ -161,16 +161,45 @@ function formFromOperation(operation: InvestmentOperation): OperationFormValues 
   };
 }
 
+function operationLabel(type: OperationType) {
+  if (type === "BUY") return "Buy";
+  if (type === "SELL") return "Sell";
+  return "Split";
+}
+
 function statusLabel(status: MonthStatus) {
-  if (status === "complete") return "完成";
-  if (status === "failed") return "失敗";
-  return "暫定";
+  if (status === "complete") return "Complete";
+  if (status === "failed") return "Failed";
+  return "Pending";
 }
 
 function StatusIcon({ status }: { status: MonthStatus }) {
-  if (status === "complete") return <CheckCircle2 className="status-icon complete" aria-label="完成" />;
-  if (status === "failed") return <XCircle className="status-icon failed" aria-label="失敗" />;
-  return <Minus className="status-icon pending" aria-label="暫定" />;
+  if (status === "complete") return <CheckCircle2 className="status-icon complete" aria-label="Complete" />;
+  if (status === "failed") return <XCircle className="status-icon failed" aria-label="Failed" />;
+  return <Minus className="status-icon pending" aria-label="Pending" />;
+}
+
+function formatSignedNumber(value: number) {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${formatNumber(value)}`;
+}
+
+function historyTitle(operation: InvestmentOperation) {
+  if (operation.type === "SPLIT") {
+    return `${operation.date} · ${operation.stockName} · Split ${formatSignedNumber(operation.quantity)} shares`;
+  }
+
+  return `${operation.date} · ${operation.stockName} · ${formatMoney(operation.amount, operation.currency)}`;
+}
+
+function historyMeta(operation: InvestmentOperation) {
+  if (operation.type === "SPLIT") {
+    return `Quantity Change ${formatSignedNumber(operation.quantity)}${operation.note ? ` · ${operation.note}` : ""}`;
+  }
+
+  return `Price ${formatMoney(operation.price, operation.currency)} · Quantity ${formatNumber(operation.quantity)}${
+    operation.note ? ` · ${operation.note}` : ""
+  }`;
 }
 
 function createStatusCounts() {
@@ -414,14 +443,14 @@ function App() {
         <div className="section-heading">
           <h2>Operation</h2>
           <div className="segmented-control">
-            {(["BUY", "SELL"] as OperationType[]).map((type) => (
+            {(["BUY", "SELL", "SPLIT"] as OperationType[]).map((type) => (
               <button
                 key={type}
                 type="button"
                 className={form.type === type ? "active" : ""}
                 onClick={() => setForm((current) => ({ ...current, type }))}
               >
-                {type === "BUY" ? "Buy" : "Sell"}
+                {operationLabel(type)}
               </button>
             ))}
           </div>
@@ -442,33 +471,37 @@ function App() {
               ))}
             </select>
           </label>
+          {form.type !== "SPLIT" && (
+            <>
+              <label>
+                Amount ({form.currency})
+                <input
+                  inputMode="decimal"
+                  value={form.amount}
+                  onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
+                  placeholder="0"
+                  required
+                />
+              </label>
+              <label>
+                Price ({form.currency})
+                <input
+                  inputMode="decimal"
+                  value={form.price}
+                  onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))}
+                  placeholder="0"
+                  required
+                />
+              </label>
+            </>
+          )}
           <label>
-            Amount ({form.currency})
-            <input
-              inputMode="decimal"
-              value={form.amount}
-              onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
-              placeholder="0"
-              required
-            />
-          </label>
-          <label>
-            Price ({form.currency})
-            <input
-              inputMode="decimal"
-              value={form.price}
-              onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))}
-              placeholder="0"
-              required
-            />
-          </label>
-          <label>
-            Quantity
+            {form.type === "SPLIT" ? "Quantity Change" : "Quantity"}
             <input
               inputMode="decimal"
               value={form.quantity}
               onChange={(event) => setForm((current) => ({ ...current, quantity: event.target.value }))}
-              placeholder="0"
+              placeholder={form.type === "SPLIT" ? "+10 / -8" : "0"}
               required
             />
           </label>
@@ -491,7 +524,7 @@ function App() {
           </label>
           <button className="primary-button" type="submit" disabled={!stockOptions.length}>
             <Save />
-            Save {form.type === "BUY" ? "Buy" : "Sell"}
+            Save {operationLabel(form.type)}
           </button>
         </form>
       </section>
@@ -663,18 +696,18 @@ function OverviewPanel({
             <div className="analysis-label">Months</div>
             <div className="analysis-total">{analysis.totalMonths}</div>
             <div className="analysis-status-list">
-              <span className="analysis-chip complete">完成 {analysis.monthCounts.complete}</span>
-              <span className="analysis-chip pending">暫定 {analysis.monthCounts.pending}</span>
-              <span className="analysis-chip failed">失敗 {analysis.monthCounts.failed}</span>
+              <span className="analysis-chip complete">Complete {analysis.monthCounts.complete}</span>
+              <span className="analysis-chip pending">Pending {analysis.monthCounts.pending}</span>
+              <span className="analysis-chip failed">Failed {analysis.monthCounts.failed}</span>
             </div>
           </div>
           <div className="analysis-group">
             <div className="analysis-label">Stock Goals</div>
             <div className="analysis-total">{analysis.totalStockGoals}</div>
             <div className="analysis-status-list">
-              <span className="analysis-chip complete">完成 {analysis.stockCounts.complete}</span>
-              <span className="analysis-chip pending">暫定 {analysis.stockCounts.pending}</span>
-              <span className="analysis-chip failed">失敗 {analysis.stockCounts.failed}</span>
+              <span className="analysis-chip complete">Complete {analysis.stockCounts.complete}</span>
+              <span className="analysis-chip pending">Pending {analysis.stockCounts.pending}</span>
+              <span className="analysis-chip failed">Failed {analysis.stockCounts.failed}</span>
             </div>
           </div>
         </div>
@@ -692,9 +725,9 @@ function OverviewPanel({
                   {group.year}
                 </span>
                 <span className="year-summary">
-                  <span className="analysis-chip complete">完成 {group.stockCounts.complete}</span>
-                  <span className="analysis-chip pending">暫定 {group.stockCounts.pending}</span>
-                  <span className="analysis-chip failed">失敗 {group.stockCounts.failed}</span>
+                  <span className="analysis-chip complete">Complete {group.stockCounts.complete}</span>
+                  <span className="analysis-chip pending">Pending {group.stockCounts.pending}</span>
+                  <span className="analysis-chip failed">Failed {group.stockCounts.failed}</span>
                 </span>
                 <span className="year-total">
                   {group.months.length} months · {group.totalStockGoals} goals
@@ -1080,13 +1113,8 @@ function HistoryModal({
                       <div className="history-main">
                         <span className={`type-badge ${operation.type.toLowerCase()}`}>{operation.type}</span>
                         <div>
-                          <div className="history-title">
-                            {operation.date} · {operation.stockName} · {formatMoney(operation.amount, operation.currency)}
-                          </div>
-                          <div className="history-meta">
-                            Price {formatMoney(operation.price, operation.currency)} · Quantity {formatNumber(operation.quantity)}
-                            {operation.note ? ` · ${operation.note}` : ""}
-                          </div>
+                          <div className="history-title">{historyTitle(operation)}</div>
+                          <div className="history-meta">{historyMeta(operation)}</div>
                           <div className="history-updated">Updated {formatTaiwanDateTime(operation.updatedAt)}</div>
                           {operation.status === "deleted" && <div className="deleted-label">Deleted</div>}
                         </div>
@@ -1174,6 +1202,7 @@ function HistoryEditForm({
       <select value={form.type} onChange={(event) => onChange({ ...form, type: event.target.value as OperationType })}>
         <option value="BUY">BUY</option>
         <option value="SELL">SELL</option>
+        <option value="SPLIT">SPLIT</option>
       </select>
       <select value={stockKey(form.stockName, form.currency)} onChange={(event) => selectStock(event.target.value)}>
         {options.map((option) => (
@@ -1182,9 +1211,18 @@ function HistoryEditForm({
           </option>
         ))}
       </select>
-      <input value={form.amount} inputMode="decimal" onChange={(event) => onChange({ ...form, amount: event.target.value })} />
-      <input value={form.price} inputMode="decimal" onChange={(event) => onChange({ ...form, price: event.target.value })} />
-      <input value={form.quantity} inputMode="decimal" onChange={(event) => onChange({ ...form, quantity: event.target.value })} />
+      {form.type !== "SPLIT" && (
+        <>
+          <input value={form.amount} inputMode="decimal" onChange={(event) => onChange({ ...form, amount: event.target.value })} />
+          <input value={form.price} inputMode="decimal" onChange={(event) => onChange({ ...form, price: event.target.value })} />
+        </>
+      )}
+      <input
+        value={form.quantity}
+        inputMode="decimal"
+        onChange={(event) => onChange({ ...form, quantity: event.target.value })}
+        placeholder={form.type === "SPLIT" ? "+10 / -8" : "Quantity"}
+      />
       <input value={form.date} onChange={(event) => onChange({ ...form, date: event.target.value.replace(/-/g, "/") })} />
       <input value={form.note} onChange={(event) => onChange({ ...form, note: event.target.value })} placeholder="Note" />
       <div className="row-actions">

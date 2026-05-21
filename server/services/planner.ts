@@ -296,6 +296,17 @@ function buildHoldings(operations: InvestmentOperation[], warnings: PlannerWarni
       } else {
         current.quantity -= operation.quantity;
       }
+    } else if (operation.type === "SPLIT") {
+      const nextQuantity = current.quantity + operation.quantity;
+
+      if (nextQuantity < -EPSILON) {
+        warnings.push({
+          operationId: operation.id,
+          message: `${operation.date} ${operation.stockName} Split 股數調整會讓持股小於 0，已略過這筆 Split。`
+        });
+      } else {
+        current.quantity = nextQuantity;
+      }
     }
 
     holdings.set(key, current);
@@ -392,10 +403,9 @@ export function calculateOverview(
 
     if (operation.type === "BUY") {
       allocateBuy(schedule, operation);
-      return;
+    } else if (operation.type === "SELL") {
+      allocateSell(schedule, operation, warnings);
     }
-
-    allocateSell(schedule, operation, warnings);
   });
 
   return {

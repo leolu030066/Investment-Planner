@@ -40,16 +40,35 @@ const settingsSchema = z.object({
   timeSlots: z.array(timeSlotSchema).min(1, "At least one time slot is required")
 });
 
-const operationSchema = z.object({
-  type: z.enum(["BUY", "SELL"]),
+const operationBaseSchema = z.object({
   stockName: z.string().trim().min(1, "Stock is required"),
   currency: currencySchema,
-  amount: z.coerce.number().positive("Amount must be greater than 0"),
-  price: z.coerce.number().positive("Price must be greater than 0"),
-  quantity: z.coerce.number().positive("Quantity must be greater than 0"),
   date: dateSchema,
   note: z.string().max(500).optional().default("")
 });
+
+const buyOperationSchema = operationBaseSchema.extend({
+  type: z.literal("BUY"),
+  amount: z.coerce.number().positive("Amount must be greater than 0"),
+  price: z.coerce.number().positive("Price must be greater than 0"),
+  quantity: z.coerce.number().positive("Quantity must be greater than 0")
+});
+
+const sellOperationSchema = operationBaseSchema.extend({
+  type: z.literal("SELL"),
+  amount: z.coerce.number().positive("Amount must be greater than 0"),
+  price: z.coerce.number().positive("Price must be greater than 0"),
+  quantity: z.coerce.number().positive("Quantity must be greater than 0")
+});
+
+const splitOperationSchema = operationBaseSchema.extend({
+  type: z.literal("SPLIT"),
+  amount: z.coerce.number().optional().default(0),
+  price: z.coerce.number().optional().default(0),
+  quantity: z.coerce.number().refine((quantity) => Math.abs(quantity) > 0, "Quantity change cannot be 0")
+});
+
+const operationSchema = z.discriminatedUnion("type", [buyOperationSchema, sellOperationSchema, splitOperationSchema]);
 
 class ApiError extends Error {
   constructor(
@@ -157,6 +176,8 @@ function parseOperation(input: unknown) {
   return {
     ...parsed,
     stockName: normalizeStockName(parsed.stockName),
+    amount: parsed.type === "SPLIT" ? 0 : parsed.amount,
+    price: parsed.type === "SPLIT" ? 0 : parsed.price,
     note: parsed.note.trim()
   };
 }

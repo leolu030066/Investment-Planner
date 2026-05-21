@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 
 const OperationSnapshotSchema = new Schema(
   {
-    type: { type: String, enum: ["BUY", "SELL"], required: true },
+    type: { type: String, enum: ["BUY", "SELL", "SPLIT"], required: true },
     stockName: { type: String, required: true },
     currency: { type: String, enum: ["USD", "TWD"], required: true },
     amount: { type: Number, required: true },
@@ -18,7 +18,7 @@ const OperationSnapshotSchema = new Schema(
 
 const OperationSchema = new Schema(
   {
-    type: { type: String, enum: ["BUY", "SELL"], required: true },
+    type: { type: String, enum: ["BUY", "SELL", "SPLIT"], required: true },
     stockName: { type: String, required: true },
     currency: { type: String, enum: ["USD", "TWD"], required: true },
     amount: { type: Number, required: true },

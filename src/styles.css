@@ -168,7 +168,7 @@ svg {
 .time-slot-row {
   display: grid;
   grid-template-columns: minmax(140px, 190px) 1fr;
-  gap: 12px;
+  gap: 28px;
   align-items: start;
   padding: 10px 0;
   border-top: 1px solid var(--border);
@@ -204,7 +204,7 @@ svg {
 
 .segmented-control {
   display: inline-grid;
-  grid-template-columns: repeat(2, minmax(72px, 1fr));
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
@@ -446,18 +446,6 @@ button:focus-visible {
   padding: 10px;
 }
 
-.year-group.complete {
-  border-color: var(--green);
-}
-
-.year-group.pending {
-  border-color: var(--amber);
-}
-
-.year-group.failed {
-  border-color: var(--red);
-}
-
 .year-header {
   display: grid;
   grid-template-columns: minmax(120px, auto) 1fr auto;
@@ -510,20 +498,8 @@ button:focus-visible {
   padding: 12px;
 }
 
-.month-row.complete {
-  border-color: var(--green);
-}
-
-.month-row.pending {
-  border-color: var(--amber);
-}
-
-.month-row.failed {
-  border-color: var(--red);
-}
-
 .month-row.current {
-  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline: 2px solid rgba(100, 116, 139, 0.28);
   outline-offset: 2px;
 }
 
@@ -764,6 +740,11 @@ button:focus-visible {
 .type-badge.sell {
   background: var(--amber-bg);
   color: var(--amber);
+}
+
+.type-badge.split {
+  background: #eef4ff;
+  color: var(--blue);
 }
 
 .history-edit-form {
