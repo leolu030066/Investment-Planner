@@ -615,13 +615,6 @@ function OverviewPanel({
             <div className="month-main">
               <div>
                 <div className="month-title">{month.month}</div>
-                <div className="month-totals">
-                  {month.totals.map((total) => (
-                    <span key={total.currency}>
-                      {total.currency}: {formatMoney(total.actual, total.currency)} / {formatMoney(total.target, total.currency)}
-                    </span>
-                  ))}
-                </div>
               </div>
               <div className="month-status" title={statusLabel(month.status)}>
                 <StatusIcon status={month.status} />

@@ -473,15 +473,6 @@ button:focus-visible {
   font-weight: 850;
 }
 
-.month-totals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-top: 5px;
-  color: #475467;
-  font-size: 13px;
-}
-
 .month-status {
   display: inline-flex;
   width: 34px;
