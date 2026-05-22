@@ -24,6 +24,7 @@ const TimeSlotSchema = new Schema(
 const SettingSchema = new Schema(
   {
     key: { type: String, required: true, unique: true, default: "default" },
+    focusMonth: { type: String },
     timeSlots: { type: [TimeSlotSchema], default: [] }
   },
   { timestamps: true }

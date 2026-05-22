@@ -6,9 +6,9 @@ import {
   buildAppState,
   calculateOverview,
   createDefaultSettings,
+  goalKey,
   hasInvalidWarnings,
   makeId,
-  goalKey,
   normalizeSettings,
   normalizeStockName,
   parseMonth,
@@ -39,7 +39,8 @@ const timeSlotSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  timeSlots: z.array(timeSlotSchema).min(1, "At least one time slot is required")
+  focusMonth: z.preprocess((value) => (value === "" ? undefined : value), monthSchema.optional()),
+  timeSlots: z.array(timeSlotSchema).default([])
 });
 
 const operationBaseSchema = z.object({
@@ -95,6 +96,7 @@ function toErrorMessage(error: unknown) {
 function serializeSettings(doc: any): SettingsState {
   return {
     id: doc._id?.toString(),
+    focusMonth: doc.focusMonth,
     timeSlots: doc.timeSlots
   };
 }
@@ -146,6 +148,7 @@ async function getState(): Promise<AppState> {
 function parseSettings(input: unknown): SettingsState {
   const parsed = settingsSchema.parse(input);
   const settings = normalizeSettings({
+    focusMonth: parsed.focusMonth,
     timeSlots: parsed.timeSlots.map((slot) => ({
       id: slot.id || makeId(),
       startMonth: slot.startMonth,
@@ -237,6 +240,7 @@ router.put("/settings", async (req, res, next) => {
     const parsed = parseSettings(req.body);
     const settings = await getOrCreateSettings();
 
+    settings.set("focusMonth", parsed.focusMonth);
     settings.set("timeSlots", parsed.timeSlots);
     await settings.save();
 

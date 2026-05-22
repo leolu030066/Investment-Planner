@@ -92,16 +92,22 @@ function addMonths(month: string, amount: number) {
   return formatMonth(parseMonth(month) + amount);
 }
 
-function getStockOptions(settings?: SettingsState): StockOption[] {
-  if (!settings) return [];
-
+function getStockOptions(settings?: SettingsState, operations: InvestmentOperation[] = []): StockOption[] {
   const stocks = new Map<string, StockOption>();
-  settings.timeSlots.forEach((slot) => {
+
+  settings?.timeSlots.forEach((slot) => {
     slot.stocks.forEach((stock) => {
       stocks.set(stockKey(stock.stockName, stock.currency), {
         stockName: normalizeStockName(stock.stockName),
         currency: stock.currency
       });
+    });
+  });
+
+  operations.forEach((operation) => {
+    stocks.set(stockKey(operation.stockName, operation.currency), {
+      stockName: normalizeStockName(operation.stockName),
+      currency: operation.currency
     });
   });
 
@@ -292,12 +298,12 @@ function App() {
   const [form, setForm] = useState<OperationFormValues>(() => emptyForm("BUY"));
   const currentMonthRef = useRef<HTMLDivElement | null>(null);
 
-  const stockOptions = useMemo(() => getStockOptions(state?.settings), [state?.settings]);
+  const stockOptions = useMemo(() => getStockOptions(state?.settings, state?.operations ?? []), [state?.operations, state?.settings]);
 
   async function loadState() {
     const payload = await fetchState();
     setState(payload);
-    const options = getStockOptions(payload.settings);
+    const options = getStockOptions(payload.settings, payload.operations);
     setForm(emptyForm("BUY", options[0]));
   }
 
@@ -343,7 +349,7 @@ function App() {
   }
 
   useEffect(() => {
-    if (!stockOptions.length) return;
+    if (!stockOptions.length || !form.stockName) return;
 
     const currentExists = stockOptions.some(
       (option) => option.stockName === form.stockName && option.currency === form.currency
@@ -383,16 +389,6 @@ function App() {
     const nextState = await saveSettings(settings);
     setState(nextState);
     setSettingsOpen(false);
-  }
-
-  function selectStock(value: string) {
-    const option = stockOptions.find((item) => stockKey(item.stockName, item.currency) === value);
-    if (!option) return;
-    setForm((current) => ({
-      ...current,
-      stockName: option.stockName,
-      currency: option.currency
-    }));
   }
 
   if (loading) {
@@ -472,16 +468,24 @@ function App() {
         <form className="operation-form" onSubmit={handleSubmit}>
           <label>
             Stock
-            <select
-              value={stockKey(form.stockName, form.currency)}
-              onChange={(event) => selectStock(event.target.value)}
-              disabled={!stockOptions.length}
-            >
-              {stockOptions.map((option) => (
-                <option key={stockKey(option.stockName, option.currency)} value={stockKey(option.stockName, option.currency)}>
-                  {option.stockName} · {option.currency}
-                </option>
+            <input
+              list="operation-stock-options"
+              value={form.stockName}
+              onChange={(event) => setForm((current) => ({ ...current, stockName: event.target.value.toUpperCase() }))}
+              placeholder="Stock"
+              required
+            />
+            <datalist id="operation-stock-options">
+              {Array.from(new Set(stockOptions.map((option) => option.stockName))).map((stockName) => (
+                <option key={stockName} value={stockName} />
               ))}
+            </datalist>
+          </label>
+          <label>
+            Currency
+            <select value={form.currency} onChange={(event) => setForm((current) => ({ ...current, currency: event.target.value as Currency }))}>
+              <option value="USD">USD</option>
+              <option value="TWD">TWD</option>
             </select>
           </label>
           {form.type === "SPLIT" ? (
@@ -558,7 +562,7 @@ function App() {
               placeholder="optional"
             />
           </label>
-          <button className="primary-button" type="submit" disabled={!stockOptions.length}>
+          <button className="primary-button" type="submit">
             <Save />
             Save {operationLabel(form.type)}
           </button>
@@ -643,22 +647,32 @@ function SettingsSummary({ settings }: { settings: SettingsState }) {
       <div className="section-heading">
         <h2>Goal</h2>
       </div>
+      {settings.focusMonth && (
+        <div className="focus-summary">
+          <span>Focus From</span>
+          <strong>{settings.focusMonth}</strong>
+        </div>
+      )}
       <div className="time-slot-list compact">
-        {settings.timeSlots.map((slot) => (
-          <div className="time-slot-row" key={slot.id}>
-            <div className="time-range">
-              {slot.startMonth} - {slot.endMonth}
+        {settings.timeSlots.length === 0 ? (
+          <div className="muted-text">No goals configured</div>
+        ) : (
+          settings.timeSlots.map((slot) => (
+            <div className="time-slot-row" key={slot.id}>
+              <div className="time-range">
+                {slot.startMonth} - {slot.endMonth}
+              </div>
+              <div className="stock-pill-list">
+                {slot.stocks.map((stock) => (
+                  <span className={`stock-pill ${stock.goalType.toLowerCase()}`} key={stock.id}>
+                    <span className="goal-type-label">{goalTypeLabel(stock.goalType)}</span>
+                    {stock.stockName} {formatMoney(stock.monthlyGoal, stock.currency)}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="stock-pill-list">
-              {slot.stocks.map((stock) => (
-                <span className={`stock-pill ${stock.goalType.toLowerCase()}`} key={stock.id}>
-                  <span className="goal-type-label">{goalTypeLabel(stock.goalType)}</span>
-                  {stock.stockName} {formatMoney(stock.monthlyGoal, stock.currency)}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </section>
   );
@@ -751,7 +765,12 @@ function OverviewPanel({
       </div>
 
       <div className="month-list">
-        {yearGroups.map((group) => {
+        {yearGroups.length === 0 ? (
+          <div className="empty-overview">
+            <span className="muted-text">No goals to display</span>
+          </div>
+        ) : (
+          yearGroups.map((group) => {
           const expanded = expandedYears.has(group.year);
 
           return (
@@ -806,7 +825,8 @@ function OverviewPanel({
               )}
             </div>
           );
-        })}
+          })
+        )}
       </div>
     </section>
   );
@@ -959,8 +979,29 @@ function SettingsModal({
         )}
 
         <div className="settings-editor">
-          {draft.timeSlots.map((slot) => (
-            <div className="editor-block" key={slot.id}>
+          <div className="editor-block settings-focus-block">
+            <label>
+              Focus From
+              <input
+                value={draft.focusMonth ?? ""}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    focusMonth: event.target.value.replace(/-/g, "/") || undefined
+                  }))
+                }
+                placeholder="yyyy/mm"
+              />
+            </label>
+          </div>
+
+          {draft.timeSlots.length === 0 ? (
+            <div className="editor-block empty-goals-block">
+              <span className="muted-text">No goals configured</span>
+            </div>
+          ) : (
+            draft.timeSlots.map((slot) => (
+              <div className="editor-block" key={slot.id}>
               <div className="slot-header">
                 <div className="slot-dates">
                   <label>
@@ -1052,7 +1093,8 @@ function SettingsModal({
                 </div>
               )}
             </div>
-          ))}
+            ))
+          )}
         </div>
 
         <div className="modal-footer">

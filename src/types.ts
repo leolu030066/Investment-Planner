@@ -21,6 +21,7 @@ export interface TimeSlot {
 
 export interface SettingsState {
   id?: string;
+  focusMonth?: string;
   timeSlots: TimeSlot[];
 }
 

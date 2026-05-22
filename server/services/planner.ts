@@ -142,6 +142,7 @@ export function snapshotOperation(operation: InvestmentOperation): OperationSnap
 export function normalizeSettings(settings: SettingsState): SettingsState {
   return {
     ...settings,
+    focusMonth: settings.focusMonth || undefined,
     timeSlots: settings.timeSlots
       .map((slot) => ({
         ...slot,
@@ -344,6 +345,29 @@ function getStockStatus(month: string, target: number, actual: number, currentMo
   return parseMonth(month) < parseMonth(currentMonth) ? "failed" : "pending";
 }
 
+function getMonthStatus(month: string, stockRows: StockOverview[], currentMonth: string): MonthStatus {
+  if (stockRows.every((stock) => stock.status === "complete")) return "complete";
+  return parseMonth(month) < parseMonth(currentMonth) ? "failed" : "pending";
+}
+
+function buildTotals(stockRows: StockOverview[]) {
+  return Array.from(
+    stockRows.reduce((map, stock) => {
+      const current = map.get(stock.currency) ?? { currency: stock.currency, target: 0, actual: 0 };
+      current.target += stock.target;
+      current.actual += stock.actual;
+      map.set(stock.currency, current);
+      return map;
+    }, new Map<Currency, { currency: Currency; target: number; actual: number }>())
+  )
+    .map(([, total]) => ({
+      ...total,
+      target: roundMoney(total.target),
+      actual: roundMoney(total.actual)
+    }))
+    .sort((a, b) => a.currency.localeCompare(b.currency));
+}
+
 function buildMonths(schedule: MonthBuckets, currentMonth: string): MonthOverview[] {
   return Array.from(schedule.entries())
     .sort(([a], [b]) => parseMonth(a) - parseMonth(b))
@@ -363,36 +387,33 @@ function buildMonths(schedule: MonthBuckets, currentMonth: string): MonthOvervie
           return a.goalType.localeCompare(b.goalType);
         });
 
-      const totals = Array.from(
-        stockRows.reduce((map, stock) => {
-          const current = map.get(stock.currency) ?? { currency: stock.currency, target: 0, actual: 0 };
-          current.target += stock.target;
-          current.actual += stock.actual;
-          map.set(stock.currency, current);
-          return map;
-        }, new Map<Currency, { currency: Currency; target: number; actual: number }>())
-      )
-        .map(([, total]) => ({
-          ...total,
-          target: roundMoney(total.target),
-          actual: roundMoney(total.actual)
-        }))
-        .sort((a, b) => a.currency.localeCompare(b.currency));
-
-      const allComplete = stockRows.every((stock) => stock.status === "complete");
-      const status: MonthStatus = allComplete
-        ? "complete"
-        : parseMonth(month) < parseMonth(currentMonth)
-          ? "failed"
-          : "pending";
-
       return {
         month,
-        status,
-        totals,
+        status: getMonthStatus(month, stockRows, currentMonth),
+        totals: buildTotals(stockRows),
         stocks: stockRows
       };
     });
+}
+
+function focusDisplayMonths(months: MonthOverview[], settings: SettingsState, currentMonth: string) {
+  if (!settings.focusMonth || parseMonth(currentMonth) < parseMonth(settings.focusMonth)) return months;
+
+  return months.flatMap((month) => {
+    if (parseMonth(month.month) < parseMonth(currentMonth)) return [];
+
+    const stocks = month.stocks.filter((stock) => stock.goalType === "SELL");
+    if (stocks.length === 0) return [];
+
+    return [
+      {
+        ...month,
+        status: getMonthStatus(month.month, stocks, currentMonth),
+        totals: buildTotals(stocks),
+        stocks
+      }
+    ];
+  });
 }
 
 export function calculateOverview(
@@ -435,7 +456,7 @@ export function calculateOverview(
   return {
     currentMonth,
     holdings,
-    months: buildMonths(schedule, currentMonth),
+    months: focusDisplayMonths(buildMonths(schedule, currentMonth), settings, currentMonth),
     warnings
   };
 }

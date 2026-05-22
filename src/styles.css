@@ -184,6 +184,24 @@ svg {
   white-space: nowrap;
 }
 
+.focus-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--muted);
+  padding: 5px 9px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.focus-summary strong {
+  color: #1f2937;
+}
+
 .stock-pill-list {
   display: flex;
   flex-wrap: wrap;
@@ -463,6 +481,13 @@ button:focus-visible {
   scroll-behavior: smooth;
 }
 
+.empty-overview,
+.empty-goals-block {
+  display: flex;
+  align-items: center;
+  min-height: 54px;
+}
+
 .year-group {
   display: grid;
   gap: 10px;
@@ -672,6 +697,10 @@ button:focus-visible {
 
 .editor-block {
   padding: 12px;
+}
+
+.settings-focus-block {
+  background: #f8fafc;
 }
 
 .slot-header {
