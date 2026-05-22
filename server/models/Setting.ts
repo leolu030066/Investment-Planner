@@ -4,6 +4,7 @@ const StockSettingSchema = new Schema(
   {
     id: { type: String, required: true },
     stockName: { type: String, required: true },
+    goalType: { type: String, enum: ["BUY", "SELL"], default: "BUY" },
     monthlyGoal: { type: Number, required: true },
     currency: { type: String, enum: ["USD", "TWD"], required: true }
   },

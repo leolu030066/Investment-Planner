@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   AppState,
   Currency,
+  GoalType,
   HoldingOverview,
   InvestmentOperation,
   MonthOverview,
@@ -19,6 +20,7 @@ const EPSILON = 0.000001;
 interface MonthStockBucket {
   stockName: string;
   currency: Currency;
+  goalType: GoalType;
   target: number;
   actual: number;
 }
@@ -31,6 +33,10 @@ export function makeId() {
 
 export function stockKey(stockName: string, currency: Currency) {
   return `${stockName.trim().toUpperCase()}__${currency}`;
+}
+
+export function goalKey(stockName: string, currency: Currency, goalType: GoalType) {
+  return `${stockKey(stockName, currency)}__${goalType}`;
 }
 
 export function normalizeStockName(stockName: string) {
@@ -106,10 +112,10 @@ export function createDefaultSettings(date = new Date()): SettingsState {
         startMonth,
         endMonth,
         stocks: [
-          { id: makeId(), stockName: "TQQQ", monthlyGoal: 1270, currency: "USD" },
-          { id: makeId(), stockName: "UPRO", monthlyGoal: 1270, currency: "USD" },
-          { id: makeId(), stockName: "VT", monthlyGoal: 317.5, currency: "USD" },
-          { id: makeId(), stockName: "0050", monthlyGoal: 10000, currency: "TWD" }
+          { id: makeId(), stockName: "TQQQ", goalType: "BUY", monthlyGoal: 1270, currency: "USD" },
+          { id: makeId(), stockName: "UPRO", goalType: "BUY", monthlyGoal: 1270, currency: "USD" },
+          { id: makeId(), stockName: "VT", goalType: "BUY", monthlyGoal: 317.5, currency: "USD" },
+          { id: makeId(), stockName: "0050", goalType: "BUY", monthlyGoal: 10000, currency: "TWD" }
         ]
       }
     ]
@@ -143,7 +149,8 @@ export function normalizeSettings(settings: SettingsState): SettingsState {
         stocks: slot.stocks.map((stock) => ({
           ...stock,
           id: stock.id || makeId(),
-          stockName: normalizeStockName(stock.stockName)
+          stockName: normalizeStockName(stock.stockName),
+          goalType: stock.goalType ?? "BUY"
         }))
       }))
       .sort((a, b) => parseMonth(a.startMonth) - parseMonth(b.startMonth))
@@ -177,7 +184,7 @@ function buildSchedule(settings: SettingsState): MonthBuckets {
       const monthBucket = buckets.get(month)!;
 
       slot.stocks.forEach((stock) => {
-        const key = stockKey(stock.stockName, stock.currency);
+        const key = goalKey(stock.stockName, stock.currency, stock.goalType);
         const existing = monthBucket.get(key);
 
         if (existing) {
@@ -186,6 +193,7 @@ function buildSchedule(settings: SettingsState): MonthBuckets {
           monthBucket.set(key, {
             stockName: normalizeStockName(stock.stockName),
             currency: stock.currency,
+            goalType: stock.goalType,
             target: stock.monthlyGoal,
             actual: 0
           });
@@ -212,8 +220,8 @@ function roundQuantity(quantity: number) {
   return Math.round((quantity + Number.EPSILON) * 1_000_000) / 1_000_000;
 }
 
-function allocateBuy(schedule: MonthBuckets, operation: InvestmentOperation) {
-  const key = stockKey(operation.stockName, operation.currency);
+function allocateGoalForward(schedule: MonthBuckets, operation: InvestmentOperation, goalType: GoalType) {
+  const key = goalKey(operation.stockName, operation.currency, goalType);
   const operationMonthIndex = parseMonth(monthFromDate(operation.date));
   const allMonths = monthsForStock(schedule, key);
   let eligibleMonths = allMonths.filter((month) => parseMonth(month) >= operationMonthIndex);
@@ -250,8 +258,12 @@ function allocatedAmountForStock(schedule: MonthBuckets, key: string) {
   }, 0);
 }
 
-function allocateSell(schedule: MonthBuckets, operation: InvestmentOperation, warnings: PlannerWarning[]) {
-  const key = stockKey(operation.stockName, operation.currency);
+function reduceBuyGoalForSell(schedule: MonthBuckets, operation: InvestmentOperation, warnings: PlannerWarning[]) {
+  const key = goalKey(operation.stockName, operation.currency, "BUY");
+  const months = monthsForStock(schedule, key).sort((a, b) => parseMonth(b) - parseMonth(a));
+
+  if (months.length === 0) return;
+
   const totalAllocated = allocatedAmountForStock(schedule, key);
 
   if (totalAllocated + EPSILON < operation.amount) {
@@ -263,7 +275,6 @@ function allocateSell(schedule: MonthBuckets, operation: InvestmentOperation, wa
   }
 
   let remaining = operation.amount;
-  const months = monthsForStock(schedule, key).sort((a, b) => parseMonth(b) - parseMonth(a));
 
   months.forEach((month) => {
     if (remaining <= EPSILON) return;
@@ -341,13 +352,15 @@ function buildMonths(schedule: MonthBuckets, currentMonth: string): MonthOvervie
         .map((stock) => ({
           stockName: stock.stockName,
           currency: stock.currency,
+          goalType: stock.goalType,
           target: roundMoney(stock.target),
           actual: roundMoney(stock.actual),
           status: getStockStatus(month, stock.target, stock.actual, currentMonth)
         }))
         .sort((a, b) => {
-          if (a.stockName === b.stockName) return a.currency.localeCompare(b.currency);
-          return a.stockName.localeCompare(b.stockName);
+          if (a.stockName !== b.stockName) return a.stockName.localeCompare(b.stockName);
+          if (a.currency !== b.currency) return a.currency.localeCompare(b.currency);
+          return a.goalType.localeCompare(b.goalType);
         });
 
       const totals = Array.from(
@@ -409,9 +422,13 @@ export function calculateOverview(
     if (warnings.some((warning) => warning.operationId === operation.id)) return;
 
     if (operation.type === "BUY") {
-      allocateBuy(schedule, operation);
+      allocateGoalForward(schedule, operation, "BUY");
     } else if (operation.type === "SELL") {
-      allocateSell(schedule, operation, warnings);
+      reduceBuyGoalForSell(schedule, operation, warnings);
+
+      if (!warnings.some((warning) => warning.operationId === operation.id)) {
+        allocateGoalForward(schedule, operation, "SELL");
+      }
     }
   });
 

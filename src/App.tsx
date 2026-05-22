@@ -31,6 +31,7 @@ import {
 import {
   AppState,
   Currency,
+  GoalType,
   InvestmentOperation,
   MonthStatus,
   OperationFormValues,
@@ -51,6 +52,10 @@ function createId() {
 
 function stockKey(stockName: string, currency: Currency) {
   return `${stockName.trim().toUpperCase()}__${currency}`;
+}
+
+function goalKey(stockName: string, currency: Currency, goalType: GoalType) {
+  return `${stockKey(stockName, currency)}__${goalType}`;
 }
 
 function normalizeStockName(stockName: string) {
@@ -169,6 +174,10 @@ function operationLabel(type: OperationType) {
   if (type === "BUY") return "Buy";
   if (type === "SELL") return "Sell";
   return "Split";
+}
+
+function goalTypeLabel(goalType: GoalType) {
+  return goalType === "BUY" ? "Buy Goal" : "Sell Goal";
 }
 
 function statusLabel(status: MonthStatus) {
@@ -642,7 +651,8 @@ function SettingsSummary({ settings }: { settings: SettingsState }) {
             </div>
             <div className="stock-pill-list">
               {slot.stocks.map((stock) => (
-                <span className="stock-pill" key={stock.id}>
+                <span className={`stock-pill ${stock.goalType.toLowerCase()}`} key={stock.id}>
+                  <span className="goal-type-label">{goalTypeLabel(stock.goalType)}</span>
                   {stock.stockName} {formatMoney(stock.monthlyGoal, stock.currency)}
                 </span>
               ))}
@@ -779,8 +789,11 @@ function OverviewPanel({
                       </div>
                       <div className="stock-overview-list">
                         {month.stocks.map((stock) => (
-                          <div className={`stock-overview-row ${stock.status}`} key={stockKey(stock.stockName, stock.currency)}>
-                            <span className="stock-name">{stock.stockName}</span>
+                          <div className={`stock-overview-row ${stock.status}`} key={goalKey(stock.stockName, stock.currency, stock.goalType)}>
+                            <span className="stock-name">
+                              <span className={`goal-type-dot ${stock.goalType.toLowerCase()}`}>{stock.goalType}</span>
+                              {stock.stockName}
+                            </span>
                             <span>{formatMoney(stock.actual, stock.currency)}</span>
                             <span className="muted-text">/ {formatMoney(stock.target, stock.currency)}</span>
                             <StatusIcon status={stock.status} />
@@ -853,7 +866,7 @@ function SettingsModal({
           id: createId(),
           startMonth,
           endMonth: addMonths(startMonth, 5),
-          stocks: [{ id: createId(), stockName: "TQQQ", monthlyGoal: 0, currency: "USD" }]
+          stocks: [{ id: createId(), stockName: "TQQQ", goalType: "BUY", monthlyGoal: 0, currency: "USD" }]
         }
       ]
     }));
@@ -874,7 +887,7 @@ function SettingsModal({
         slot.id === slotId
           ? {
               ...slot,
-              stocks: [...slot.stocks, { id: createId(), stockName: "", monthlyGoal: 0, currency: "USD" }]
+              stocks: [...slot.stocks, { id: createId(), stockName: "", goalType: "BUY", monthlyGoal: 0, currency: "USD" }]
             }
           : slot
       )
@@ -999,6 +1012,13 @@ function SettingsModal({
                       onChange={(event) => updateStock(slot.id, stock.id, { stockName: event.target.value })}
                       placeholder="Stock"
                     />
+                    <select
+                      value={stock.goalType}
+                      onChange={(event) => updateStock(slot.id, stock.id, { goalType: event.target.value as GoalType })}
+                    >
+                      <option value="BUY">Buy Goal</option>
+                      <option value="SELL">Sell Goal</option>
+                    </select>
                     <input
                       className="amount-input"
                       inputMode="decimal"

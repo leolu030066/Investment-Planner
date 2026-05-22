@@ -8,11 +8,11 @@ import {
   createDefaultSettings,
   hasInvalidWarnings,
   makeId,
+  goalKey,
   normalizeSettings,
   normalizeStockName,
   parseMonth,
   snapshotOperation,
-  stockKey
 } from "../services/planner.js";
 import { AppState, Currency, InvestmentOperation, SettingsState } from "../types.js";
 
@@ -21,10 +21,12 @@ const router = Router();
 const monthSchema = z.string().regex(/^\d{4}\/(0[1-9]|1[0-2])$/, "Month must be YYYY/MM");
 const dateSchema = z.string().regex(/^\d{4}\/(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/, "Date must be YYYY/MM/DD");
 const currencySchema = z.enum(["USD", "TWD"]);
+const goalTypeSchema = z.enum(["BUY", "SELL"]);
 
 const stockSettingSchema = z.object({
   id: z.string().optional(),
   stockName: z.string().trim().min(1, "Stock name is required"),
+  goalType: goalTypeSchema.optional().default("BUY"),
   monthlyGoal: z.coerce.number().nonnegative("Monthly goal must be 0 or greater"),
   currency: currencySchema
 });
@@ -151,6 +153,7 @@ function parseSettings(input: unknown): SettingsState {
       stocks: slot.stocks.map((stock) => ({
         id: stock.id || makeId(),
         stockName: normalizeStockName(stock.stockName),
+        goalType: stock.goalType,
         monthlyGoal: stock.monthlyGoal,
         currency: stock.currency
       }))
@@ -164,9 +167,9 @@ function parseSettings(input: unknown): SettingsState {
 
     const seen = new Set<string>();
     slot.stocks.forEach((stock) => {
-      const key = stockKey(stock.stockName, stock.currency);
+      const key = goalKey(stock.stockName, stock.currency, stock.goalType);
       if (seen.has(key)) {
-        throw new ApiError(400, `${stock.stockName} ${stock.currency} is duplicated in one time slot`);
+        throw new ApiError(400, `${stock.stockName} ${stock.currency} ${stock.goalType} goal is duplicated in one time slot`);
       }
       seen.add(key);
     });

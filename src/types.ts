@@ -1,4 +1,5 @@
 export type Currency = "USD" | "TWD";
+export type GoalType = "BUY" | "SELL";
 export type OperationType = "BUY" | "SELL" | "SPLIT";
 export type OperationStatus = "active" | "deleted";
 export type MonthStatus = "complete" | "pending" | "failed";
@@ -6,6 +7,7 @@ export type MonthStatus = "complete" | "pending" | "failed";
 export interface StockSetting {
   id: string;
   stockName: string;
+  goalType: GoalType;
   monthlyGoal: number;
   currency: Currency;
 }
@@ -58,6 +60,7 @@ export interface InvestmentOperation {
 export interface StockOverview {
   stockName: string;
   currency: Currency;
+  goalType: GoalType;
   target: number;
   actual: number;
   status: MonthStatus;

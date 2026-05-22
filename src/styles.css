@@ -193,6 +193,7 @@ svg {
 .stock-pill {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   min-height: 30px;
   padding: 5px 9px;
   border-radius: 8px;
@@ -200,6 +201,31 @@ svg {
   color: #1e3a8a;
   font-size: 13px;
   font-weight: 700;
+}
+
+.stock-pill.sell {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.goal-type-label,
+.goal-type-dot {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.goal-type-label {
+  padding: 4px 6px;
+  background: rgba(37, 99, 235, 0.11);
+}
+
+.stock-pill.sell .goal-type-label {
+  background: rgba(234, 88, 12, 0.13);
 }
 
 .segmented-control {
@@ -571,9 +597,24 @@ button:focus-visible {
 }
 
 .stock-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   min-width: 0;
   overflow-wrap: anywhere;
   font-weight: 800;
+}
+
+.goal-type-dot {
+  flex: none;
+  padding: 4px 6px;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.goal-type-dot.sell {
+  background: #ffedd5;
+  color: #c2410c;
 }
 
 .modal-backdrop {
@@ -657,13 +698,13 @@ button:focus-visible {
 
 .stock-editor-row {
   display: grid;
-  grid-template-columns: minmax(120px, 1.2fr) minmax(120px, 1fr) minmax(92px, 0.6fr);
+  grid-template-columns: minmax(120px, 1.2fr) minmax(116px, 0.8fr) minmax(120px, 1fr) minmax(92px, 0.6fr);
   gap: 8px;
   align-items: center;
 }
 
 .stock-editor-row:has(.checkbox) {
-  grid-template-columns: 28px minmax(120px, 1.2fr) minmax(120px, 1fr) minmax(92px, 0.6fr);
+  grid-template-columns: 28px minmax(120px, 1.2fr) minmax(116px, 0.8fr) minmax(120px, 1fr) minmax(92px, 0.6fr);
 }
 
 .checkbox {
